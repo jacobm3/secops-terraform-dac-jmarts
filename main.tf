@@ -21,9 +21,9 @@ provider "google-beta" {
 #   gsutil mb -p YOUR_PROJECT gs://YOUR_BUCKET
 #   gsutil versioning set on gs://YOUR_BUCKET
 #
-# terraform {
-#   backend "gcs" {
-#     bucket = "my-secops-tf-state"
-#     prefix = "data-tables"
-#   }
-# }
+terraform {
+   backend "gcs" {
+     bucket = "jmarts-secops-util"
+     prefix = "dac-tf-state-b4236539"
+   }
+ }
