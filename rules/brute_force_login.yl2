@@ -1,0 +1,21 @@
+rule dac_demo_brute_force_login {
+  meta:
+    author = "secops-team"
+    description = "Detects more than 10 failed logins from a single IP within 5 minutes."
+    severity = "MEDIUM"
+
+  events:
+    $fail.metadata.event_type = "USER_LOGIN"
+    $fail.security_result.action = "BLOCK"
+    $fail.principal.ip = $src_ip
+
+  match:
+    $src_ip over 5m
+
+  outcome:
+    $failed_count = count_distinct($fail.metadata.id)
+    $risk_score = 70
+
+  condition:
+    $fail and $failed_count > 10
+}

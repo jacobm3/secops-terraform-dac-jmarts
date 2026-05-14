@@ -1,0 +1,104 @@
+# ──────────────────────────────────────────────
+# Terraform Plan — runs on every pull request
+# ──────────────────────────────────────────────
+# Shows what Terraform WOULD change, without actually changing anything.
+# Posts the plan output as a comment on the PR so reviewers can see the diff.
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+
+# Only one plan per PR at a time; cancel older runs if a new push arrives.
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write   # needed to post the plan comment
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Check out the PR branch ──
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Install Terraform ──
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.9"
+
+      # ── 3. Authenticate to Google Cloud ──
+      # Option A: Service account key (simpler to set up).
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Option B: Workload Identity Federation (more secure, no long-lived key).
+      # Uncomment this block and remove Option A above to use it.
+      # - name: Authenticate to GCP (Workload Identity)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: "projects/123456/locations/global/workloadIdentityPools/my-pool/providers/github"
+      #     service_account: "terraform@my-project.iam.gserviceaccount.com"
+
+      # ── 4. Terraform Init ──
+      - name: Terraform Init
+        run: terraform init
+
+      # ── 5. Terraform Validate ──
+      - name: Terraform Validate
+        run: terraform validate
+
+      # ── 6. Terraform Plan ──
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ secrets.SECOPS_REGION }}" \
+            -var="instance=${{ secrets.SECOPS_INSTANCE }}" \
+            -no-color \
+            -out=tfplan 2>&1 | tee plan_output.txt
+        continue-on-error: true
+
+      # ── 7. Post plan output as a PR comment ──
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan_output.txt', 'utf8');
+
+            // GitHub comments have a 65536 char limit — truncate if needed.
+            const maxLen = 60000;
+            const truncated = plan.length > maxLen
+              ? plan.substring(0, maxLen) + '\n\n... (truncated)'
+              : plan;
+
+            const body = `#### Terraform Plan 📖
+            \`\`\`
+            ${truncated}
+            \`\`\`
+
+            *Triggered by @${{ github.actor }} in commit ${{ github.sha }}*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body,
+            });
+
+      # ── 8. Fail the check if the plan failed ──
+      - name: Fail if plan errored
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

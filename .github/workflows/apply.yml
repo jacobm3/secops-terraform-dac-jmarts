@@ -1,0 +1,64 @@
+# ──────────────────────────────────────────────
+# Terraform Apply — runs when a PR merges to main
+# ──────────────────────────────────────────────
+# Actually applies the changes to your SecOps instance.
+# Only triggers on pushes to main (i.e. merged PRs).
+
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+
+# Only one apply at a time to avoid state conflicts.
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Check out main ──
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Install Terraform ──
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.9"
+
+      # ── 3. Authenticate to Google Cloud ──
+      # Option A: Service account key.
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Option B: Workload Identity Federation (recommended).
+      # - name: Authenticate to GCP (Workload Identity)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: "projects/123456/locations/global/workloadIdentityPools/my-pool/providers/github"
+      #     service_account: "terraform@my-project.iam.gserviceaccount.com"
+
+      # ── 4. Terraform Init ──
+      - name: Terraform Init
+        run: terraform init
+
+      # ── 5. Terraform Apply ──
+      # -auto-approve skips the interactive "yes" prompt.
+      # This is safe because the plan was already reviewed in the PR.
+      - name: Terraform Apply
+        run: |
+          terraform apply \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ secrets.SECOPS_REGION }}" \
+            -var="instance=${{ secrets.SECOPS_INSTANCE }}" \
+            -auto-approve

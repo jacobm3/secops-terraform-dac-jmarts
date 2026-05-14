@@ -1,0 +1,6 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# Do NOT commit terraform.tfvars — it is in .gitignore.
+
+project_id = "my-gcp-project-id"
+region     = "us"
+instance   = "00000000-0000-0000-0000-000000000000"

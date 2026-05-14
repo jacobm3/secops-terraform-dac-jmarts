@@ -1,0 +1,50 @@
+# ──────────────────────────────────────────────
+# Template: Add Your Own Data Table
+# ──────────────────────────────────────────────
+# Two steps:
+#   1. Create a CSV in tables/my_table.csv with a header row + data rows.
+#   2. Copy this file to the repo root as table_my_table.tf and update it.
+#
+# column_type values: STRING | NUMBER | BOOLEAN
+# column_index: 0-based position matching the CSV column order.
+# The for_each key must be a column whose values are unique per row.
+
+locals {
+  my_table_rows = csvdecode(file("${path.module}/tables/my_table.csv"))
+}
+
+resource "google_chronicle_data_table" "my_table" {
+  provider = google-beta
+  location      = var.region
+  instance      = var.instance
+  data_table_id = "my_table"
+  description   = "Describe what this table is for."
+
+  column_info {
+    original_column = "column_one"
+    column_index    = 0
+    column_type     = "STRING"
+  }
+
+  column_info {
+    original_column = "column_two"
+    column_index    = 1
+    column_type     = "STRING"
+  }
+}
+
+resource "google_chronicle_data_table_row" "my_table" {
+  provider = google-beta
+  # Use a unique column as the map key (here: column_one).
+  for_each = { for row in local.my_table_rows : row.column_one => row }
+
+  location      = var.region
+  instance      = var.instance
+  data_table_id = google_chronicle_data_table.my_table.data_table_id
+
+  # List values in the SAME ORDER as the column_info blocks above.
+  values = [
+    each.value.column_one,
+    each.value.column_two,
+  ]
+}

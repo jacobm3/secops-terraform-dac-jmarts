@@ -1,0 +1,19 @@
+rule dac_demo_login_from_blocked_country {
+  meta:
+    author = "secops-team"
+    description = "Detects logins originating from countries on the block list."
+    severity = "HIGH"
+
+  events:
+    $login.metadata.event_type = "USER_LOGIN"
+    $login.principal.ip_geo_artifact.location.country_or_region = $country
+
+  match:
+    $country over 1h
+
+  outcome:
+    $risk_score = 85
+
+  condition:
+    $login
+}

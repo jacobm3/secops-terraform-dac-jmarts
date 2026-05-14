@@ -1,0 +1,33 @@
+# Terraform state — never commit these
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Variable files with real values
+terraform.tfvars
+*.auto.tfvars
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Plan output files
+*.tfplan
+.tf.plan.out
+.tf.log.debug
+.apply.out
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/

@@ -1,0 +1,5 @@
+ip_address,description,added_by
+203.0.113.10,Corporate VPN gateway,secops-team
+198.51.100.5,Authorized vulnerability scanner,secops-team
+192.0.2.20,CI/CD runner pool,platform-team
+10.0.0.1,Internal DNS resolver,network-team

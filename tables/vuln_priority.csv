@@ -1,0 +1,5 @@
+cve_id,priority,notes
+CVE-2021-44228,CRITICAL,Log4Shell - patch immediately
+CVE-2022-22965,HIGH,Spring4Shell - patch within 7 days
+CVE-2023-44487,HIGH,HTTP/2 Rapid Reset - update load balancers
+CVE-2024-3094,CRITICAL,xz backdoor - check affected distros
