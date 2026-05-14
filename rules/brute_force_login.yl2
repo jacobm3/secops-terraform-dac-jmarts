@@ -10,12 +10,12 @@ rule dac_demo_brute_force_login {
     $fail.principal.ip = $src_ip
 
   match:
-    $src_ip over 5m
+    $src_ip over 10m
 
   outcome:
     $failed_count = count_distinct($fail.metadata.id)
     $risk_score = 70
 
   condition:
-    $fail and $failed_count > 10
+    $fail and $failed_count > 20
 }
